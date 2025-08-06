@@ -1,19 +1,12 @@
--- 1. DEPARTAMENTO
-CREATE TABLE DEPARTAMENTO (
-    ID_Departamento INT PRIMARY KEY,
-    Nombre VARCHAR(100) NOT NULL
-);
-
--- 2. CLIENTE
 CREATE TABLE CLIENTE (
     ID_Cliente INT PRIMARY KEY,
-    Nombre VARCHAR(100) NOT NULL,
-    Apellido VARCHAR(100) NOT NULL,
+    Nombre VARCHAR(50),
+    Apellido VARCHAR(50),
     Telefono VARCHAR(20),
-    Correo VARCHAR(100)
+    Email VARCHAR(50),
+    Tipo VARCHAR(45)
 );
 
--- 3. DIRECCION_CLIENTE
 CREATE TABLE DIRECCION_CLIENTE (
     ID_Direccion INT PRIMARY KEY,
     ID_Cliente INT,
@@ -23,73 +16,14 @@ CREATE TABLE DIRECCION_CLIENTE (
     FOREIGN KEY (ID_Cliente) REFERENCES CLIENTE(ID_Cliente)
 );
 
--- 4. PROVEEDOR
-CREATE TABLE PROVEEDOR (
-    ID_Proveedor INT PRIMARY KEY,
-    Nombre VARCHAR(200) NOT NULL,
-    Contacto VARCHAR(100) NOT NULL,
-    Direccion VARCHAR(200)
-);
-
--- 5. PRODUCTO
-CREATE TABLE PRODUCTO (
-    ID_Producto INT PRIMARY KEY,
-    Nombre VARCHAR(100) NOT NULL,
-    Tipo VARCHAR(50) NOT NULL,
-    Unidad_Medida DECIMAL(10,2) NOT NULL,
-    ID_Proveedor INT,
-    FOREIGN KEY (ID_Proveedor) REFERENCES PROVEEDOR(ID_Proveedor)
-);
-
--- 6. BODEGA
-CREATE TABLE BODEGA (
-    ID_Bodega INT PRIMARY KEY,
-    Nombre VARCHAR(100),
-    Ubicacion VARCHAR(200)
-);
-
--- 7. INVENTARIO
-CREATE TABLE INVENTARIO (
-    ID_Inventario INT PRIMARY KEY,
-    ID_Producto INT,
-    ID_Bodega INT,
-    Cantidad INT NOT NULL,
-    Fecha_Ultima_Actualizacion DATETIME,
-    FOREIGN KEY (ID_Producto) REFERENCES PRODUCTO(ID_Producto),
-    FOREIGN KEY (ID_Bodega) REFERENCES BODEGA(ID_Bodega)
-);
-
--- 8. MAQUINARIA
-CREATE TABLE MAQUINARIA (
-    ID_Maquinaria INT PRIMARY KEY,
-    Nombre VARCHAR(100) NOT NULL,
-    Estado VARCHAR(45) NOT NULL CHECK (Estado IN ('Activo', 'Mantenimiento', 'Inactivo')),
-    Fecha_Adquisicion DATE,
-    Horas_Uso INT
-);
-
-
-
--- 9. MANTENIMIENTO
-CREATE TABLE MANTENIMIENTO (
-    ID_Mantenimiento INT PRIMARY KEY,
-    ID_Maquinaria INT,
-    Fecha DATE,
-    Descripcion TEXT,
-    Costo DECIMAL(10,2),
-    FOREIGN KEY (ID_Maquinaria) REFERENCES MAQUINARIA(ID_Maquinaria)
-);
-
--- 10. VENTAS
 CREATE TABLE VENTAS (
     ID_Venta INT PRIMARY KEY,
     ID_Cliente INT,
-    Fecha DATE,
-    Total DECIMAL(10,2),
+    Fecha_Venta DATETIME,
+    Metodo_Pago VARCHAR(50),
     FOREIGN KEY (ID_Cliente) REFERENCES CLIENTE(ID_Cliente)
 );
 
--- 11. DETALLES_VENTA
 CREATE TABLE DETALLES_VENTA (
     ID_Detalle_Venta INT PRIMARY KEY,
     ID_Venta INT,
@@ -100,49 +34,105 @@ CREATE TABLE DETALLES_VENTA (
     FOREIGN KEY (ID_Producto) REFERENCES PRODUCTO(ID_Producto)
 );
 
--- 12. EMPLEADO
+CREATE TABLE PROVEEDOR (
+    ID_Proveedor INT PRIMARY KEY,
+    Nombre VARCHAR(100),
+    Telefono VARCHAR(15),
+    Direccion VARCHAR(200)
+);
+
+CREATE TABLE PRODUCTO (
+    ID_Producto INT PRIMARY KEY,
+    Nombre VARCHAR(100),
+    Tipo VARCHAR(50),
+    Precio_unitario DECIMAL(10,2),
+    ID_Proveedor INT,
+    FOREIGN KEY (ID_Proveedor) REFERENCES PROVEEDOR(ID_Proveedor)
+);
+
+CREATE TABLE PRECIO_PRODUCTO (
+    ID_Precio INT PRIMARY KEY,
+    ID_Producto INT,
+    Fecha DATE,
+    Costo_Unitario DECIMAL(10,2),
+    FOREIGN KEY (ID_Producto) REFERENCES PRODUCTO(ID_Producto)
+);
+
+CREATE TABLE BODEGA (
+    ID_Bodega INT PRIMARY KEY,
+    Nombre VARCHAR(100),
+    Ubicacion VARCHAR(100)
+);
+
+CREATE TABLE INVENTARIO (
+    ID_Inventario INT PRIMARY KEY,
+    ID_Producto INT,
+    ID_Bodega INT,
+    Cantidad INT,
+    Fecha_Ultima_Actualizacion DATE,
+    FOREIGN KEY (ID_Producto) REFERENCES PRODUCTO(ID_Producto),
+    FOREIGN KEY (ID_Bodega) REFERENCES BODEGA(ID_Bodega)
+);
+
+CREATE TABLE COMPRAS (
+    ID_Compra INT PRIMARY KEY,
+    ID_Proveedor INT,
+    Fecha_Compra DATETIME,
+    FOREIGN KEY (ID_Proveedor) REFERENCES PROVEEDOR(ID_Proveedor)
+);
+
+CREATE TABLE DETALLES_COMPRA (
+    ID_Detalle_Compra INT PRIMARY KEY,
+    ID_Compra INT,
+    ID_Producto INT,
+    Cantidad INT,
+    Costo_Unitario DECIMAL(10,2),
+    FOREIGN KEY (ID_Compra) REFERENCES COMPRAS(ID_Compra),
+    FOREIGN KEY (ID_Producto) REFERENCES PRODUCTO(ID_Producto)
+);
+
+CREATE TABLE DEPARTAMENTO (
+    ID_Departamento INT PRIMARY KEY,
+    Nombre VARCHAR(100)
+);
+
 CREATE TABLE EMPLEADO (
     ID_Empleado INT PRIMARY KEY,
-    Nombre VARCHAR(100) NOT NULL,
-    Apellido VARCHAR(100) NOT NULL,
-    Cargo VARCHAR(45) NOT NULL,
-    Salario DECIMAL(10,2) NOT NULL,
-    Fecha_Contratacion DATE NOT NULL,
+    Nombre VARCHAR(100),
+    Apellido VARCHAR(100),
+    Cargo VARCHAR(45),
+    Salario DECIMAL(10,2),
+    Fecha_Contratacion DATE,
     ID_Departamento INT,
     FOREIGN KEY (ID_Departamento) REFERENCES DEPARTAMENTO(ID_Departamento)
 );
 
--- 13. TIPO_USUARIO
-CREATE TABLE TIPO_USUARIO (
-    ID_Tipo INT PRIMARY KEY,
-    Descripcion VARCHAR(100)
+CREATE TABLE MAQUINARIA (
+    ID_Maquinaria INT PRIMARY KEY,
+    Nombre VARCHAR(100),
+    Modelo VARCHAR(45),
+    Estado VARCHAR(30),
+    Fecha_Adquisicion DATE,
+    Horas_Uso INT
 );
 
--- 14. USUARIO
-CREATE TABLE USUARIO (
-    ID_Usuario INT PRIMARY KEY,
-    Nombre_Usuario VARCHAR(100) NOT NULL,
-    Contrasena VARCHAR(100) NOT NULL,
-    Correo VARCHAR(100),
-    ID_Tipo INT,
-    FOREIGN KEY (ID_Tipo) REFERENCES TIPO_USUARIO(ID_Tipo)
+CREATE TABLE PRODUCCION (
+    ID_Produccion INT PRIMARY KEY,
+    ID_Producto INT,
+    Cantidad_Producida INT,
+    Fecha_Cosecha DATE,
+    ID_Empleado INT,
+    ID_Maquinaria INT,
+    FOREIGN KEY (ID_Producto) REFERENCES PRODUCTO(ID_Producto),
+    FOREIGN KEY (ID_Empleado) REFERENCES EMPLEADO(ID_Empleado),
+    FOREIGN KEY (ID_Maquinaria) REFERENCES MAQUINARIA(ID_Maquinaria)
 );
 
--- 15. LOGIN
-CREATE TABLE LOGIN (
-    ID_Login INT PRIMARY KEY,
-    ID_Usuario INT,
-    Fecha DATETIME,
-    Estado_Sesion VARCHAR(20),
-    FOREIGN KEY (ID_Usuario) REFERENCES USUARIO(ID_Usuario)
+CREATE TABLE MANTENIMIENTO (
+    ID_Mantenimiento INT PRIMARY KEY,
+    ID_Maquinaria INT,
+    Fecha DATE,
+    Descripcion TEXT,
+    Costo DECIMAL(10,2),
+    FOREIGN KEY (ID_Maquinaria) REFERENCES MAQUINARIA(ID_Maquinaria)
 );
-
--- 16. PAGO
-CREATE TABLE PAGO (
-    ID_Pago INT PRIMARY KEY,
-    ID_Venta INT,
-    Fecha_Pago DATE,
-    Monto DECIMAL(10,2),
-    Metodo_Pago VARCHAR(50),
-    FOREIGN KEY (ID_Venta) REFERENCES VENTAS(ID_Venta)
-)
