@@ -116,3 +116,111 @@ FROM producto p
 LEFT JOIN detalles_venta dv ON p.ID_Producto = dv.ID_Producto
 WHERE dv.ID_Producto IS NULL;
 
+-- Listar clientes con el total de ventas realizadas
+
+select c.nombre as cliente, count(v.ID_Venta) as ventas_totales
+from cliente c 
+join ventas v on v.ID_Cliente = c.ID_Cliente
+group  by c.Nombre ;
+
+
+--Mostrar productos con su precio actual y costo unitario
+
+select p.nombre as producto, p.Precio_unitario, dc.Costo_unitario
+from producto p 
+join detalles_compra dc on dc.ID_Producto = p.ID_Producto;
+
+
+--Listar proveedores con los productos que suministran
+
+describe proveedor;
+
+select pr.nombre as proveedor, p.nombre as producto
+from proveedor pr
+join producto p on p.ID_Proveedor = pr.ID_Proveedor;
+
+--Mostrar bodegas con la cantidad de productos diferentes almacenados
+
+SELECT  b.Nombre AS Bodega, COUNT(DISTINCT p.ID_Producto) AS Productos_Diferentes
+FROM bodega b
+JOIN inventario i ON b.ID_Bodega = i.ID_Bodega
+JOIN  producto p ON i.ID_Producto = p.ID_Producto
+GROUP BY b.ID_Bodega, b.Nombre;
+
+-- Listar empleados con las máquinas que han operado
+
+SELECT  e.Nombre AS Empleado, m.Nombre AS Maquina
+FROM  produccion p 
+join maquinaria m on m.ID_Maquinaria = p.ID_Maquinaria
+join empleado e on e.ID_Empleado = p.ID_Empleado
+group by e.Nombre , m.Nombre ;
+
+--Mostrar ventas con detalles completos (cliente, productos, cantidades)
+
+SELECT v.ID_Venta, c.Nombre AS Cliente,  p.Nombre AS Producto,  dv.Cantidad, dv.Precio_Por_Unidad 
+FROM  ventas v
+JOIN cliente c ON v.ID_Cliente = c.ID_Cliente
+JOIN  detalles_venta dv ON v.ID_Venta = dv.ID_Venta
+JOIN  producto p ON dv.ID_Producto = p.ID_Producto;
+
+-- Listar productos con su stock actual en todas las bodegas
+
+select b.nombre as bodega, p.nombre, SUM(i.cantidad ) as cantitad
+from bodega b 
+join inventario i on i.ID_Bodega = b.ID_Bodega
+join producto p on p.ID_Producto = i.ID_Producto
+group  by b.Nombre, p.Nombre;
+
+--Mostrar máquinas con horas de uso y estado actual
+
+
+
+SELECT m.Nombre AS Maquina,m.Horas_Uso, m.Estado
+FROM maquinaria m;
+
+-- Listar mantenimientos con descripción y nombre de máquina
+SELECT mto.ID_Mantenimiento,maq.Nombre AS Maquina, mto.Descripcion, mto.Fecha,mto.Costo
+FROM mantenimiento mto
+JOIN maquinaria maq ON mto.ID_Maquinaria = maq.ID_Maquinaria;
+
+--Mostrar producción con fechas y empleados responsables
+
+SELECT pr.ID_Produccion,pr.Fecha_Cosecha , e.Nombre AS Empleado
+FROM  produccion pr
+JOIN empleado e ON pr.ID_Empleado = e.ID_Empleado;
+
+--Listar compras con detalles de productos adquiridos
+
+SELECT c.ID_Compra, p.Nombre AS Producto,dc.Cantidad,dc.Costo_Unitario _Unitario
+FROM compras c
+JOIN  detalles_compra dc ON c.ID_Compra = dc.ID_Compra
+JOIN producto p ON dc.ID_Producto = p.ID_Producto;
+
+-- Mostrar clientes con su tipo y dirección completa
+
+SELECT  c.Nombre AS Cliente,c.Tipo AS Tipo_Cliente,dc.Direccion_Detallada
+FROM cliente c
+JOIN direccion_cliente dc ON dc.ID_Cliente = c.ID_Cliente;
+
+-- Listar productos con su proveedor y fechas de compra
+
+SELECT p.Nombre AS Producto,pr.Nombre AS Proveedor,c.Fecha_Compra
+FROM producto p
+JOIN proveedor pr ON p.ID_Proveedor = pr.ID_Proveedor
+JOIN detalles_compra dc ON p.ID_Producto = dc.ID_Producto
+JOIN compras c ON dc.ID_Compra = c.ID_Compra;
+
+
+-- Mostrar empleados con su producción realizada
+
+SELECT e.Nombre AS Empleado,pr.Fecha_Cosecha ,pr.Cantidad_Producida 
+FROM empleado e
+JOIN produccion pr ON e.ID_Empleado = pr.ID_Empleado;
+
+-- Listar máquinas con su producción asociada y mantenimientos
+
+SELECT  m.Nombre AS Maquina,pr.ID_Produccion,mto.ID_Mantenimiento
+FROM maquinaria m
+LEFT JOIN produccion pr ON m.ID_Maquinaria = pr.ID_Maquinaria
+LEFT JOIN mantenimiento mto ON m.ID_Maquinaria = mto.ID_Maquinaria;
+
