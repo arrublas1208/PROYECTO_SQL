@@ -821,3 +821,199 @@ WHERE p.ID_Producto NOT IN (
 );
 
 
+
+
+
+drop procedure TransferirInventario
+
+--Transferir inventario entre bodegas - SP para mover productos de una bodega a otra
+
+DELIMITER //
+CREATE PROCEDURE TransferirInventario(
+    IN p_ID_Producto INT,
+    IN p_ID_Bodega_Origen INT,
+    IN p_ID_Bodega_Destino INT,
+    IN p_Cantidad INT
+)
+BEGIN
+    -- Restar de la bodega origen
+    UPDATE inventario
+    SET Cantidad = Cantidad - p_Cantidad
+    WHERE ID_Producto = p_ID_Producto
+      AND ID_Bodega = p_ID_Bodega_Origen;
+
+    -- Agregar a la bodega destino
+    INSERT INTO inventario (ID_Producto, ID_Bodega, Cantidad)
+    VALUES (p_ID_Producto, p_ID_Bodega_Destino, p_Cantidad)
+    ON DUPLICATE KEY UPDATE Cantidad = Cantidad + p_Cantidad;
+END //
+DELIMITER ;
+
+CALL TransferirInventario(
+    5,   -- ID del producto
+    1,   -- ID bodega origen
+    2,   -- ID bodega destino
+    10   -- cantidad a transferir
+);
+
+
+
+SELECT * 
+FROM inventario
+WHERE ID_Producto = 1 
+  AND ID_Bodega IN (1, 2);
+
+CALL TransferirInventario(1, 1, 2, 5);
+
+SHOW COLUMNS FROM ventas;
+
+
+--Obtener historial de precios - SP que muestre evolución de precios de un producto
+DELIMITER //
+
+DELIMITER $$
+CREATE PROCEDURE ObtenerHistorialPrecios(IN p_ID_Producto INT)
+BEGIN
+    SELECT Fecha, Costo_Unitario
+    FROM precio_producto
+    WHERE ID_Producto = p_ID_Producto
+    ORDER BY Fecha DESC;
+END $$
+DELIMITER ;
+
+
+CALL ObtenerHistorialPrecios(1);
+
+drop procedure  RegistrarVenta;
+
+--Registrar venta completa - SP que registre venta, detalles y actualice inventario
+DELIMITER //
+CREATE PROCEDURE RegistrarVenta(
+    IN p_ID_Cliente INT,
+    IN p_ID_Producto INT,
+    IN p_Cantidad INT,
+    IN p_Precio DECIMAL(10,2)
+)
+BEGIN
+    DECLARE v_ID_Venta INT;
+
+    -- Insertar la venta
+    INSERT INTO ventas (ID_Cliente, Fecha_Venta)
+    VALUES (p_ID_Cliente, CURDATE());
+    SET v_ID_Venta = LAST_INSERT_ID();
+
+    -- Insertar detalle de la venta
+    INSERT INTO detalles_venta (ID_Venta, ID_Producto, Cantidad, Precio_Por_Unidad)
+    VALUES (v_ID_Venta, p_ID_Producto, p_Cantidad, p_Precio);
+
+    -- Actualizar inventario
+    UPDATE inventario
+    SET Cantidad = Cantidad - p_Cantidad
+    WHERE ID_Producto = p_ID_Producto;
+END //
+DELIMITER ;
+
+CALL RegistrarVenta(1, 3, 5, 1200.00);
+
+
+drop procedure GenerarAlertasStockMinimo;
+
+--Generar alertas de stock mínimo - SP que identifique productos bajo nivel mínimo
+DELIMITER //
+
+CREATE PROCEDURE GenerarAlertasStockMinimo()
+BEGIN
+    SELECT p.Nombre, i.Cantidad
+    FROM producto p
+    JOIN inventario i ON p.ID_Producto = i.ID_Producto
+    WHERE i.Cantidad < 10;  -- Aquí usas 10 como stock mínimo fijo
+END //
+
+DELIMITER ;
+
+
+CALL GenerarAlertasStockMinimo();
+
+--Obtener productos más vendidos - SP con ranking de productos por volumen ventas
+
+DESCRIBE producto;
+
+DELIMITER //
+CREATE PROCEDURE ProductosMasVendidos()
+BEGIN
+    SELECT p.Nombre, SUM(dv.Cantidad) AS Total_Vendido
+    FROM producto p
+    JOIN detalles_venta dv ON p.ID_Producto = dv.ID_Producto
+    GROUP BY p.ID_Producto
+    ORDER BY Total_Vendido DESC
+    LIMIT 10;
+END //
+DELIMITER ;
+
+CALL ProductosMasVendidos();
+
+
+--Registrar horas de uso de maquinaria - SP para actualizar horas de trabajo de equipos
+DELIMITER //
+CREATE PROCEDURE RegistrarHorasMaquinaria(
+    IN p_ID_Maquinaria INT,
+    IN p_Horas_Adicionales INT
+)
+BEGIN
+    UPDATE maquinaria
+    SET Horas_Uso = Horas_Uso + p_Horas_Adicionales
+    WHERE ID_Maquinaria = p_ID_Maquinaria;
+END //
+DELIMITER ;
+
+CALL RegistrarHorasMaquinaria(3, 5);
+
+
+--Generar reporte de productividad - SP que relacione producción vs recursos usados
+DELIMITER //
+CREATE PROCEDURE ReporteProductividad()
+BEGIN
+    SELECT m.ID_Maquinaria,
+           SUM(pr.Cantidad_Producida) AS Total_Produccion,
+           COUNT(DISTINCT pr.ID_Empleado) AS Empleados_Involucrados
+    FROM produccion pr
+    JOIN maquinaria m ON pr.ID_Maquinaria = m.ID_Maquinaria
+    GROUP BY m.ID_Maquinaria;
+END //
+DELIMITER ;
+
+
+--Buscar clientes por ubicación - SP que filtre clientes por ciudad/departamento
+DELIMITER //
+CREATE PROCEDURE BuscarClientesPorUbicacion(
+    IN p_Ciudad VARCHAR(100)
+)
+BEGIN
+    SELECT c.ID_Cliente, c.Nombre, d.Direccion_Detallada
+    FROM cliente c
+    JOIN direccion_cliente d ON c.ID_Cliente = d.ID_Cliente
+    WHERE d.Direccion_Detallada LIKE CONCAT('%', p_Ciudad, '%');
+END //
+DELIMITER ;
+
+CALL BuscarClientesPorUbicacion('Bogotá');
+
+
+drop procedure CalcularMargenGanancia;
+
+--Calcular margen de ganancia - SP que determine margen (precio venta - costo) por producto
+
+DELIMITER //
+CREATE PROCEDURE CalcularMargenGanancia()
+BEGIN
+    SELECT p.Nombre,
+           pp.Costo_Unitario,
+           p.Precio_unitario,
+           (p.Precio_unitario - pp.Costo_Unitario) AS Margen,
+           ROUND(((p.Precio_unitario - pp.Costo_Unitario) / pp.Costo_Unitario) * 100, 2) AS Margen_Porcentaje
+    FROM producto p
+    JOIN precio_producto pp ON p.ID_Producto = pp.ID_Producto;
+END //
+DELIMITER ;
+
+CALL CalcularMargenGanancia();
