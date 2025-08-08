@@ -711,3 +711,113 @@ WHERE m.ID_Maquinaria NOT IN (
     FROM mantenimiento mt
     WHERE YEAR(mt.Fecha) = 2023
 );
+
+
+--Mostrar la rentabilidad por línea de producto
+SELECT 
+    p.Tipo AS Linea_Producto,
+    SUM((p.Precio_Unitario - pp.Costo_Unitario) * dv.Cantidad) AS Rentabilidad_Total
+FROM producto p
+JOIN precio_producto pp ON p.ID_Producto = pp.ID_Producto
+JOIN detalles_venta dv ON p.ID_Producto = dv.ID_Producto
+GROUP BY p.Tipo
+ORDER BY Rentabilidad_Total DESC;
+
+Listar correlación entre mantenimiento y producción
+SELECT 
+    m.ID_Maquinaria,
+    (SELECT COUNT(*) FROM mantenimiento WHERE ID_Maquinaria = m.ID_Maquinaria) AS Total_Mantenimientos,
+    (SELECT SUM(pr.Cantidad_Producida) 
+     FROM produccion pr 
+     WHERE pr.ID_Maquinaria = m.ID_Maquinaria) AS Total_Produccion
+FROM maquinaria m;
+
+
+--Mostrar la distribución geográfica de clientes
+SELECT 
+    dc.Ciudad,
+    COUNT(c.ID_Cliente) AS Total_Clientes
+FROM cliente c
+JOIN direccion_cliente dc ON c.ID_Cliente = dc.ID_Cliente
+GROUP BY dc.Ciudad
+ORDER BY Total_Clientes DESC;
+
+--Listar tendencias de compra por temporada
+SELECT 
+    MONTH(v.Fecha_Venta ) AS Mes,
+    YEAR(v.Fecha_Venta ) AS Año,
+    SUM(dv.Cantidad) AS Total_Unidades
+FROM ventas v
+JOIN detalles_venta dv ON v.ID_Venta = dv.ID_Venta
+GROUP BY Año, Mes
+ORDER BY Año DESC, Mes DESC;
+
+--Mostrar el ciclo de vida de productos (introducción, crecimiento, etc.)
+SELECT 
+    p.Nombre,
+    CASE 
+        WHEN SUM(dv.Cantidad) < 100 THEN 'Introducción'
+        WHEN SUM(dv.Cantidad) BETWEEN 100 AND 500 THEN 'Crecimiento'
+        WHEN SUM(dv.Cantidad) BETWEEN 501 AND 1000 THEN 'Madurez'
+        ELSE 'Declive'
+    END AS Etapa
+FROM producto p
+JOIN detalles_venta dv ON p.ID_Producto = dv.ID_Producto
+GROUP BY p.ID_Producto;
+
+--Listar la utilización de capacidad por bodega
+SELECT 
+    b.Nombre AS Bodega,
+    SUM(i.Cantidad) AS Total_Productos,
+    b.Capacidad,
+    CONCAT(ROUND((SUM(i.Cantidad) / b.Capacidad) * 100, 2), '%') AS Porcentaje_Utilizado
+FROM bodega b
+JOIN inventario i ON b.ID_Bodega = i.ID_Bodega
+GROUP BY b.ID_Bodega;
+
+--Mostrar la relación costo-beneficio de máquinas
+SELECT 
+    b.Nombre AS Bodega,
+    SUM(i.Cantidad) AS Total_Productos
+FROM bodega b
+JOIN inventario i ON b.ID_Bodega = i.ID_Bodega
+GROUP BY b.ID_Bodega
+ORDER BY Total_Productos DESC;
+
+--Listar productos complementarios en ventas
+SELECT 
+    m.Nombre,
+    (SELECT SUM(Costo) FROM mantenimiento WHERE ID_Maquinaria = m.ID_Maquinaria) AS Costo_Total,
+    (SELECT SUM(pr.Cantidad_Producida * p.Precio_Unitario)
+     FROM produccion pr
+     JOIN producto p ON pr.ID_Producto = p.ID_Producto
+     WHERE pr.ID_Maquinaria = m.ID_Maquinaria) AS Beneficio_Total
+FROM maquinaria m;
+
+--Mostrar el valor del inventario obsoleto
+SELECT 
+    dv1.ID_Producto AS Producto_1,
+    dv2.ID_Producto AS Producto_2,
+    COUNT(*) AS Veces_Vendidos_Juntos
+FROM detalles_venta dv1
+JOIN detalles_venta dv2 
+    ON dv1.ID_Venta = dv2.ID_Venta 
+    AND dv1.ID_Producto < dv2.ID_Producto
+GROUP BY Producto_1, Producto_2
+ORDER BY Veces_Vendidos_Juntos DESC;
+
+--Listar oportunidades de descuento por productos con exceso de inventario
+SELECT 
+    p.Nombre,
+    i.Cantidad,
+    (i.Cantidad * p.Precio_Unitario) AS Valor_Total
+FROM inventario i
+JOIN producto p ON i.ID_Producto = p.ID_Producto
+WHERE p.ID_Producto NOT IN (
+    SELECT DISTINCT ID_Producto 
+    FROM detalles_venta dv
+    JOIN ventas v ON dv.ID_Venta = v.ID_Venta
+    WHERE v.Fecha_Venta  >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+);
+
+
