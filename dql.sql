@@ -608,3 +608,106 @@ FROM maquinaria m
 LEFT JOIN produccion pr ON m.ID_Maquinaria = pr.ID_Maquinaria
 LEFT JOIN mantenimiento mto ON m.ID_Maquinaria = mto.ID_Maquinaria;
 
+-Listar los meses con mayor volumen de ventas
+
+SELECT  
+    m.Nombre AS Maquina,
+    (
+        SELECT SUM(mt.Costo)
+        FROM mantenimiento mt
+        WHERE mt.ID_Maquinaria = m.ID_Maquinaria
+    ) AS Costo_Total_Mantenimiento
+FROM maquinaria m;
+
+
+--Listar los meses con mayor volumen de ventas
+SELECT DISTINCT MONTH(v.Fecha_Venta) AS Mes,
+       (SELECT SUM(dv.Cantidad)
+        FROM ventas v2
+        JOIN detalles_venta dv ON v2.ID_Venta = dv.ID_Venta
+        WHERE MONTH(v2.Fecha_Venta) = MONTH(v.Fecha_Venta)) AS Total_Vendido
+FROM ventas v
+ORDER BY Total_Vendido DESC;
+
+
+--Mostrar la producción promedio por tipo de producto
+
+SELECT DISTINCT p.Tipo,
+       (SELECT AVG(pr.Cantidad_Producida)
+        FROM produccion pr
+        JOIN producto p2 ON pr.ID_Producto = p2.ID_Producto
+        WHERE p2.Tipo = p.Tipo) AS Promedio_Produccion
+FROM producto p;
+
+--Listar clientes con más ventas realizadas
+
+SELECT c.Nombre,
+       (SELECT COUNT(*)
+        FROM ventas v
+        WHERE v.ID_Cliente = c.ID_Cliente) AS Cantidad_Ventas
+FROM cliente c
+ORDER BY Cantidad_Ventas DESC;
+
+--Mostrar la diferencia entre precio y costo unitario por producto
+SELECT p.Nombre,
+       p.Precio_Unitario - (
+           SELECT pp.Costo_Unitario
+           FROM precio_producto pp
+           WHERE pp.ID_Producto = p.ID_Producto
+           ORDER BY pp.Fecha DESC
+           LIMIT 1
+       ) AS Diferencia
+FROM producto p;
+
+
+--Listar bodegas con capacidad utilizada (total de productos)
+
+SELECT b.Nombre,
+       (SELECT SUM(i.Cantidad)
+        FROM inventario i
+        WHERE i.ID_Bodega = b.ID_Bodega) AS Capacidad_Utilizada
+FROM bodega b;
+
+
+--Mostrar el empleado con mayor producción
+
+SELECT e.Nombre,
+       (SELECT SUM(pr.Cantidad_Producida)
+        FROM produccion pr
+        WHERE pr.ID_Empleado = e.ID_Empleado) AS Total_Produccion
+FROM empleado e
+ORDER BY Total_Produccion DESC
+LIMIT 1;
+
+--Listar productos con mayor margen de ganancia
+
+SELECT p.Nombre,
+       p.Precio_Unitario - (
+           SELECT pp.Costo_Unitario
+           FROM precio_producto pp
+           WHERE pp.ID_Producto = p.ID_Producto
+           ORDER BY pp.Fecha DESC
+           LIMIT 1
+       ) AS Margen_Ganancia
+FROM producto p
+ORDER BY Margen_Ganancia DESC;
+
+-- Mostrar el proveedor con más compras realizadas
+
+SELECT pr.Nombre,
+       (SELECT COUNT(*)
+        FROM compras c
+        WHERE c.ID_Proveedor = pr.ID_Proveedor) AS Total_Compras
+FROM proveedor pr
+ORDER BY Total_Compras DESC
+LIMIT 1;
+
+-- Listar máquinas que no han tenido mantenimiento en 2023
+
+SELECT m.Nombre
+FROM maquinaria m
+WHERE m.ID_Maquinaria NOT IN (
+    SELECT DISTINCT mt.ID_Maquinaria
+    FROM mantenimiento mt
+    WHERE YEAR(mt.Fecha) = 2023
+);
