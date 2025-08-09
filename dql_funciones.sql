@@ -152,3 +152,204 @@ BEGIN
 END //
 DELIMITER ;
 
+
+USE gestion_agroindustrial;
+
+-- Elimina la función si existe
+DROP FUNCTION IF EXISTS RedondearPrecioProducto;
+
+-- Función para redondear el precio de un producto al entero más cercano
+DELIMITER $$
+CREATE FUNCTION RedondearPrecioProducto(p_ID_Producto INT)
+RETURNS DECIMAL(12,0)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE v_precio DECIMAL(12,2);
+
+    SELECT Costo_Unitario
+    INTO v_precio
+    FROM precio_producto
+    WHERE ID_Producto = p_ID_Producto
+    LIMIT 1;
+
+    IF v_precio IS NULL THEN
+        RETURN NULL; -- producto no existe o precio nulo
+    END IF;
+
+    RETURN ROUND(v_precio);
+END $$
+DELIMITER ;
+
+-- Prueba de la función RedondearPrecioProducto
+SELECT RedondearPrecioProducto(1) AS Precio_Redondeado;
+
+-- Función para calcular días desde la primera compra de un cliente
+DELIMITER //
+CREATE FUNCTION DiasDesdeRegistro(p_ID_Cliente INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE fecha_inicio DATE;
+
+    SELECT MIN(Fecha_Venta)
+    INTO fecha_inicio
+    FROM ventas
+    WHERE ID_Cliente = p_ID_Cliente;
+
+    RETURN DATEDIFF(CURDATE(), fecha_inicio);
+END //
+DELIMITER ;
+
+-- Prueba de DiasDesdeRegistro
+SELECT 
+    c.ID_Cliente,
+    c.Nombre,
+    c.Apellido,
+    DiasDesdeRegistro(c.ID_Cliente) AS Dias_Desde_Registro
+FROM cliente c;
+
+-- Función para obtener las tres primeras letras de un producto
+DELIMITER //
+CREATE FUNCTION TresPrimerasLetrasProducto(p_ID_Producto INT)
+RETURNS VARCHAR(3)
+DETERMINISTIC
+BEGIN
+    DECLARE resultado VARCHAR(3);
+
+    SELECT LEFT(Nombre, 3)
+    INTO resultado
+    FROM producto
+    WHERE ID_Producto = p_ID_Producto;
+
+    RETURN resultado;
+END //
+DELIMITER ;
+
+-- Prueba de TresPrimerasLetrasProducto
+SELECT 
+    ID_Producto,
+    Nombre,
+    TresPrimerasLetrasProducto(ID_Producto) AS Iniciales
+FROM producto;
+
+-- Elimina la función de precio con IVA si existe
+DROP FUNCTION IF EXISTS PrecioConIVA;
+
+-- Función para calcular precio con IVA (19%)
+DELIMITER //
+CREATE FUNCTION PrecioConIVA(p_Costo DECIMAL(10,2))
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+    RETURN ROUND(p_Costo * 1.19, 2);
+END //
+DELIMITER ;
+
+-- Prueba de PrecioConIVA
+SELECT 
+    ID_Producto,
+    Costo_Unitario,
+    PrecioConIVA(Costo_Unitario) AS Precio_con_IVA
+FROM precio_producto;
+
+-- Función para formatear salario como moneda
+DELIMITER //
+CREATE FUNCTION FormatearSalario(p_Salario DECIMAL(10,2))
+RETURNS VARCHAR(20)
+DETERMINISTIC
+BEGIN
+    RETURN CONCAT('$', FORMAT(p_Salario, 2));
+END //
+DELIMITER ;
+
+-- Prueba de FormatearSalario
+SELECT 
+    ID_Empleado,
+    Nombre,
+    Salario,
+    FormatearSalario(Salario) AS Salario_Formateado
+FROM empleado;
+
+-- Función para calcular la longitud del nombre completo
+DELIMITER //
+CREATE FUNCTION LargoNombreCompleto(p_Nombre VARCHAR(50), p_Apellido VARCHAR(50))
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    RETURN CHAR_LENGTH(CONCAT(p_Nombre, ' ', p_Apellido));
+END //
+DELIMITER ;
+
+-- Prueba de LargoNombreCompleto
+SELECT 
+    ID_Empleado,
+    Nombre,
+    Apellido,
+    LargoNombreCompleto(Nombre, Apellido) AS Longitud
+FROM empleado;
+
+-- Función para obtener el último día del mes de una fecha dada
+DELIMITER //
+CREATE FUNCTION UltimoDiaMes(p_Fecha DATE)
+RETURNS DATE
+DETERMINISTIC
+BEGIN
+    RETURN LAST_DAY(p_Fecha);
+END //
+DELIMITER ;
+
+-- Prueba de UltimoDiaMes
+SELECT 
+    ID_Empleado,
+    Fecha_Contratacion,
+    UltimoDiaMes(Fecha_Contratacion) AS Ultimo_Dia
+FROM empleado;
+
+-- Función para redondear a 2 decimales
+DELIMITER //
+CREATE FUNCTION Redondear2Dec(p_Valor DECIMAL(10,2))
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+    RETURN ROUND(p_Valor, 2);
+END //
+DELIMITER ;
+
+-- Prueba de Redondear2Dec
+SELECT 
+    Redondear2Dec(MIN(Costo_Unitario)) AS Precio_Min,
+    Redondear2Dec(MAX(Costo_Unitario)) AS Precio_Max
+FROM precio_producto;
+
+-- Función para calcular promedio con 2 decimales
+DELIMITER //
+CREATE FUNCTION Promedio2Dec(p_Valor DECIMAL(10,2))
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+    RETURN ROUND(p_Valor, 2);
+END //
+DELIMITER ;
+
+-- Prueba de Promedio2Dec
+SELECT 
+    Promedio2Dec(AVG(Salario)) AS Salario_Promedio
+FROM empleado;
+
+-- Función para calcular días desde la fecha de contratación
+DELIMITER //
+CREATE FUNCTION DiasDesdeContratacion(p_Fecha DATE)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    RETURN DATEDIFF(CURDATE(), p_Fecha);
+END //
+DELIMITER ;
+
+-- Prueba de DiasDesdeContratacion
+SELECT 
+    ID_Empleado,
+    Fecha_Contratacion,
+    DiasDesdeContratacion(Fecha_Contratacion) AS Dias_Trabajados
+FROM empleado;
