@@ -353,3 +353,4 @@ SELECT
     Fecha_Contratacion,
     DiasDesdeContratacion(Fecha_Contratacion) AS Dias_Trabajados
 FROM empleado;
+
